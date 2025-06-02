@@ -1,5 +1,3 @@
-# Don't Remove Credit Tg - @spidy_universe
-
 import os
 import time
 import datetime
@@ -12,7 +10,7 @@ import tgcrypto
 import subprocess
 import concurrent.futures
 
-from utils import progress_bar
+from utils import progress_bar, upload_progress_bar, download_progress_bar, hrb
 
 from pyrogram import Client, filters
 from pyrogram.types import Message
@@ -35,10 +33,12 @@ def exec(cmd):
         print(output)
         return output
         #err = process.stdout.decode()
+
 def pull_run(work, cmds):
     with concurrent.futures.ThreadPoolExecutor(max_workers=work) as executor:
         print("Waiting for tasks to complete")
         fut = executor.map(exec,cmds)
+
 async def aio(url,name):
     k = f'{name}.pdf'
     async with aiohttp.ClientSession() as session:
@@ -49,7 +49,6 @@ async def aio(url,name):
                 await f.close()
     return k
 
-
 async def download(url,name):
     ka = f'{name}.pdf'
     async with aiohttp.ClientSession() as session:
@@ -59,8 +58,6 @@ async def download(url,name):
                 await f.write(await resp.read())
                 await f.close()
     return ka
-
-
 
 def parse_vid_info(info):
     info = info.strip()
@@ -82,7 +79,6 @@ def parse_vid_info(info):
                 pass
     return new_info
 
-
 def vid_info(info):
     info = info.strip()
     info = info.split("\n")
@@ -98,18 +94,10 @@ def vid_info(info):
             try:
                 if "RESOLUTION" not in i[2] and i[2] not in temp and "audio" not in i[2]:
                     temp.append(i[2])
-                    
-                    # temp.update(f'{i[2]}')
-                    # new_info.append((i[2], i[0]))
-                    #  mp4,mkv etc ==== f"({i[1]})" 
-                    
                     new_info.update({f'{i[2]}':f'{i[0]}'})
-
             except:
                 pass
     return new_info
-
-
 
 async def run(cmd):
     proc = await asyncio.create_subprocess_shell(
@@ -127,8 +115,6 @@ async def run(cmd):
     if stderr:
         return f'[stderr]\n{stderr.decode()}'
 
-    
-
 def old_download(url, file_name, chunk_size = 1024 * 10):
     if os.path.exists(file_name):
         os.remove(file_name)
@@ -139,14 +125,12 @@ def old_download(url, file_name, chunk_size = 1024 * 10):
                 fd.write(chunk)
     return file_name
 
-
 def human_readable_size(size, decimal_places=2):
     for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB']:
         if size < 1024.0 or unit == 'PB':
             break
         size /= 1024.0
     return f"{size:.{decimal_places}f} {unit}"
-
 
 def time_name():
     date = datetime.date.today()
@@ -248,7 +232,6 @@ async def download_visionias(url, cmd, name):
         failed_counter = 0
         return await default_download(url, cmd, name)
 
-
 async def download_penpencilvod(url, cmd, name):
     global failed_counter
     # Retry logic for 'penpencilvod' URLs
@@ -261,52 +244,52 @@ async def download_penpencilvod(url, cmd, name):
         failed_counter = 0
         return await default_download(url, cmd, name)
 
-async def download_video(url,cmd, name):
-    download_cmd = f'{cmd} -R 25 --fragment-retries 25 --external-downloader aria2c --downloader-args "aria2c: -x 16 -j 32"'
-    global failed_counter
-    print(download_cmd)
-    logging.info(download_cmd)
-    k = subprocess.run(download_cmd, shell=True)
-    if "visionias" in cmd and k.returncode != 0 and failed_counter <= 10:
-        failed_counter += 1
-        await asyncio.sleep(5)
-        await download_video(url, cmd, name)
-    failed_counter = 0
-    try:
-        if os.path.isfile(name):
-            return name
-        elif os.path.isfile(f"{name}.webm"):
-            return f"{name}.webm"
-        name = name.split(".")[0]
-        if os.path.isfile(f"{name}.mkv"):
-            return f"{name}.mkv"
-        elif os.path.isfile(f"{name}.mp4"):
-            return f"{name}.mp4"
-        elif os.path.isfile(f"{name}.mp4.webm"):
-            return f"{name}.mp4.webm"
-
-        return name
-    except FileNotFoundError as exc:
-        return os.path.isfile.splitext[0] + "." + "mp4"
-
-
-async def send_doc(bot: Client, m: Message,cc,ka,cc1,prog,count,name):
-    reply = await m.reply_text(f"Uploading » `{name}`")
-    time.sleep(1)
+async def send_doc(bot: Client, m: Message, cc, ka, cc1, prog, count, name):
+    # Get file size
+    file_size = os.path.getsize(ka)
+    
+    reply = await m.reply_text(
+        f"**Uploading**\n\n"
+        f"**{name}**\n\n"
+        f"0 MB Out Of {hrb(file_size)}\n"
+        f"[○○○○○○○○○○○○○○○○○○○○] 0.00%\n\n"
+        f"**Speed:** 0 MB/s\n"
+        f"**ETA:** -\n"
+        f"**Elapsed:** 0s"
+    )
+    
     start_time = time.time()
-    await m.reply_document(ka,caption=cc1)
-    count+=1
-    await reply.delete (True)
+    await m.reply_document(
+        ka,
+        caption=cc1,
+        progress=upload_progress_bar,
+        progress_args=(reply, start_time, name)
+    )
+    
+    count += 1
+    await reply.delete(True)
     time.sleep(1)
     os.remove(ka)
-    time.sleep(3) 
+    time.sleep(3)
 
-
-async def send_vid(bot: Client, m: Message,cc,filename,thumb,name,prog):
+async def send_vid(bot: Client, m: Message, cc, filename, thumb, name, prog):
     
     subprocess.run(f'ffmpeg -i "{filename}" -ss 00:00:12 -vframes 1 "{filename}.jpg"', shell=True)
-    await prog.delete (True)
-    reply = await m.reply_text(f"**Uploading ...** - `{name}`")
+    await prog.delete(True)
+    
+    # Get file size for progress
+    file_size = os.path.getsize(filename)
+    
+    reply = await m.reply_text(
+        f"**Uploading**\n\n"
+        f"**{name}**\n\n"
+        f"0 MB Out Of {hrb(file_size)}\n"
+        f"[○○○○○○○○○○○○○○○○○○○○] 0.00%\n\n"
+        f"**Speed:** 0 MB/s\n"
+        f"**ETA:** -\n"
+        f"**Elapsed:** 0s"
+    )
+    
     try:
         if thumb == "no":
             thumbnail = f"{filename}.jpg"
@@ -316,19 +299,31 @@ async def send_vid(bot: Client, m: Message,cc,filename,thumb,name,prog):
         await m.reply_text(str(e))
 
     dur = int(duration(filename))
-
     start_time = time.time()
 
     try:
-        await m.reply_video(filename,caption=cc, supports_streaming=True,height=720,width=1280,thumb=thumbnail,duration=dur, progress=progress_bar,progress_args=(reply,start_time))
+        await m.reply_video(
+            filename,
+            caption=cc, 
+            supports_streaming=True,
+            height=720,
+            width=1280,
+            thumb=thumbnail,
+            duration=dur, 
+            progress=upload_progress_bar,
+            progress_args=(reply, start_time, name)
+        )
     except Exception:
-        await m.reply_document(filename,caption=cc, progress=progress_bar,progress_args=(reply,start_time))
+        await m.reply_document(
+            filename,
+            caption=cc, 
+            progress=upload_progress_bar,
+            progress_args=(reply, start_time, name)
+        )
 
-    
     os.remove(filename)
-
     os.remove(f"{filename}.jpg")
-    await reply.delete (True)
+    await reply.delete(True)
 
 # helper.py
 async def download_and_send_video(url, name, chat_id, bot, log_channel_id, accept_logs, caption, m):
@@ -368,14 +363,13 @@ async def download_and_send_video(url, name, chat_id, bot, log_channel_id, accep
     except Exception as e:
         await m.reply_text(f"An error occurred: {str(e)}")
 
-
-
-async def download_video(url,cmd, name):
+async def download_video(url, cmd, name):
     download_cmd = f'{cmd} -R infinite --fragment-retries 25 --socket-timeout 50 --external-downloader aria2c --downloader-args "aria2c: -x 16 -j 32" --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"'
     global failed_counter   
     print(download_cmd)
     logging.info(download_cmd)
     k = subprocess.run(download_cmd, shell=True)
+    
     if "visionias" in cmd and k.returncode != 0 and failed_counter <= 10:
         failed_counter += 1
         await asyncio.sleep(5)
@@ -397,45 +391,3 @@ async def download_video(url,cmd, name):
         return name
     except FileNotFoundError as exc:
         return os.path.isfile.splitext[0] + "." + "mp4"
-
-
-async def send_doc(bot: Client, m: Message,cc,ka,cc1,prog,count,name):
-    reply = await m.reply_text(f"Uploading » `{name}`")
-    time.sleep(1)
-    start_time = time.time()
-    await m.reply_document(ka,caption=cc1)
-    count+=1
-    await reply.delete (True)
-    time.sleep(1)
-    os.remove(ka)
-    time.sleep(3) 
-
-
-async def send_vid(bot: Client, m: Message,cc,filename,thumb,name,prog):
-    
-    subprocess.run(f'ffmpeg -i "{filename}" -ss 00:00:12 -vframes 1 "{filename}.jpg"', shell=True)
-    await prog.delete (True)
-    reply = await m.reply_text(f"**⥣ Uploading...** » `{name}`")
-    try:
-        if thumb == "no":
-            thumbnail = f"{filename}.jpg"
-        else:
-            thumbnail = thumb
-    except Exception as e:
-        await m.reply_text(str(e))
-
-    dur = int(duration(filename))
-
-    start_time = time.time()
-
-    try:
-        await m.reply_video(filename,caption=cc, supports_streaming=True,height=720,width=1280,thumb=thumbnail,duration=dur, progress=progress_bar,progress_args=(reply,start_time))
-    except Exception:
-        await m.reply_document(filename,caption=cc, progress=progress_bar,progress_args=(reply,start_time))
-
-    
-    os.remove(filename)
-
-    os.remove(f"{filename}.jpg")
-    await reply.delete (True)
-
