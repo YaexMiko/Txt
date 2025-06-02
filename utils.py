@@ -1,8 +1,8 @@
-# Don't Remove Credit Telegram - @spidy_universe
 import time
 import math
 import os
 from pyrogram.errors import FloodWait
+from datetime import datetime, timedelta
 
 class Timer:
     def __init__(self, time_between=5):
@@ -15,30 +15,24 @@ class Timer:
             return True
         return False
 
-
-from datetime import datetime,timedelta
-
-def hrb(value, digits= 2, delim= "", postfix=""):
-    """Return a human-readable file size.
-    """
+def hrb(value, digits=2, delim="", postfix=""):
+    """Return a human-readable file size."""
     if value is None:
         return None
     chosen_unit = "B"
-    for unit in ("KiB", "MiB", "GiB", "TiB"):
+    for unit in ("KB", "MB", "GB", "TB"):
         if value > 1000:
             value /= 1024
             chosen_unit = unit
         else:
             break
-    return f"{value:.{digits}f}" + delim + chosen_unit + postfix
+    return f"{value:.{digits}f} {chosen_unit}"
 
-def hrt(seconds, precision = 0):
-    """Return a human-readable time delta as a string.
-    """
+def hrt(seconds, precision=0):
+    """Return a human-readable time delta as a string."""
     pieces = []
     value = timedelta(seconds=seconds)
     
-
     if value.days:
         pieces.append(f"{value.days}d")
 
@@ -62,36 +56,145 @@ def hrt(seconds, precision = 0):
 
     return "".join(pieces[:precision])
 
-
-
 timer = Timer()
 
-async def progress_bar(current, total, reply, start):
+async def download_progress_bar(current, total, reply, start, filename="File"):
+    """New Download Progress Bar"""
     if timer.can_send():
         now = time.time()
-        diff = now - start
-        if diff < 1:
+        elapsed = now - start
+        if elapsed < 1:
             return
+        
+        # Calculate progress
+        perc = (current * 100 / total)
+        speed = current / elapsed
+        remaining_bytes = total - current
+        
+        if speed > 0:
+            eta_seconds = remaining_bytes / speed
+            eta = f"{int(eta_seconds)}s"
         else:
-            perc = f"{current * 100 / total:.1f}%"
-            elapsed_time = round(diff)
-            speed = current / elapsed_time
-            remaining_bytes = total - current
-            if speed > 0:
-                eta_seconds = remaining_bytes / speed
-                eta = hrt(eta_seconds, precision=1)
-            else:
-                eta = "-"
-            sp = str(hrb(speed)) + "/s"
-            tot = hrb(total)
-            cur = hrb(current)
-            bar_length = 11
-            completed_length = int(current * bar_length / total)
-            remaining_length = bar_length - completed_length
-            progress_bar = "▰" * completed_length + "▱" * remaining_length
-            
-            try:
-                await reply.edit(f'<b>\n ╭──⌯════🆄︎ᴘʟᴏᴀᴅɪɴɢ⬆️⬆️═════⌯──╮ \n├⚡ {progress_bar}|﹝{perc}﹞ \n├🚀 Speed » {sp} \n├📟 Processed » {cur}\n├🧲 Size - ETA » {tot} - {eta} \n├🤖 𝔹ʏ » @Engineers_Babu\n╰─═══ ✪ @Engineers_Babu ✪ ═══─╯\n</b>') 
-            except FloodWait as e:
-                time.sleep(e.x)
+            eta = "-"
+        
+        # Format sizes
+        current_size = hrb(current)
+        total_size = hrb(total)
+        speed_str = hrb(speed) + "/s"
+        elapsed_str = f"{int(elapsed)}s"
+        
+        # Create progress bar (20 circles)
+        bar_length = 20
+        filled_length = int(current * bar_length / total)
+        bar = "●" * filled_length + "○" * (bar_length - filled_length)
+        
+        progress_text = (
+            f"**Downloading**\n\n"
+            f"**{filename}**\n\n"
+            f"{current_size} Out Of {total_size}\n"
+            f"[{bar}] {perc:.2f}%\n\n"
+            f"**Speed:** {speed_str}\n"
+            f"**ETA:** {eta}\n"
+            f"**Elapsed:** {elapsed_str}"
+        )
+        
+        try:
+            await reply.edit(progress_text)
+        except FloodWait as e:
+            time.sleep(e.x)
+        except Exception:
+            pass
 
+async def upload_progress_bar(current, total, reply, start, filename="File"):
+    """New Upload Progress Bar"""
+    if timer.can_send():
+        now = time.time()
+        elapsed = now - start
+        if elapsed < 1:
+            return
+        
+        # Calculate progress
+        perc = (current * 100 / total)
+        speed = current / elapsed
+        remaining_bytes = total - current
+        
+        if speed > 0:
+            eta_seconds = remaining_bytes / speed
+            eta = f"{int(eta_seconds)}s"
+        else:
+            eta = "-"
+        
+        # Format sizes
+        current_size = hrb(current)
+        total_size = hrb(total)
+        speed_str = hrb(speed) + "/s"
+        elapsed_str = f"{int(elapsed)}s"
+        
+        # Create progress bar (20 circles)
+        bar_length = 20
+        filled_length = int(current * bar_length / total)
+        bar = "●" * filled_length + "○" * (bar_length - filled_length)
+        
+        progress_text = (
+            f"**Uploading**\n\n"
+            f"**{filename}**\n\n"
+            f"{current_size} Out Of {total_size}\n"
+            f"[{bar}] {perc:.2f}%\n\n"
+            f"**Speed:** {speed_str}\n"
+            f"**ETA:** {eta}\n"
+            f"**Elapsed:** {elapsed_str}"
+        )
+        
+        try:
+            await reply.edit(progress_text)
+        except FloodWait as e:
+            time.sleep(e.x)
+        except Exception:
+            pass
+
+async def progress_bar(current, total, reply, start):
+    """Main progress bar function for compatibility"""
+    if timer.can_send():
+        now = time.time()
+        elapsed = now - start
+        if elapsed < 1:
+            return
+        
+        # Calculate progress
+        perc = (current * 100 / total)
+        speed = current / elapsed
+        remaining_bytes = total - current
+        
+        if speed > 0:
+            eta_seconds = remaining_bytes / speed
+            eta = f"{int(eta_seconds)}s"
+        else:
+            eta = "-"
+        
+        # Format sizes
+        current_size = hrb(current)
+        total_size = hrb(total)
+        speed_str = hrb(speed) + "/s"
+        elapsed_str = f"{int(elapsed)}s"
+        
+        # Create progress bar (20 circles)
+        bar_length = 20
+        filled_length = int(current * bar_length / total)
+        bar = "●" * filled_length + "○" * (bar_length - filled_length)
+        
+        progress_text = (
+            f"**Processing**\n\n"
+            f"**File**\n\n"
+            f"{current_size} Out Of {total_size}\n"
+            f"[{bar}] {perc:.2f}%\n\n"
+            f"**Speed:** {speed_str}\n"
+            f"**ETA:** {eta}\n"
+            f"**Elapsed:** {elapsed_str}"
+        )
+        
+        try:
+            await reply.edit(progress_text)
+        except FloodWait as e:
+            time.sleep(e.x)
+        except Exception:
+            pass
