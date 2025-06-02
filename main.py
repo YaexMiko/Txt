@@ -113,48 +113,17 @@ class Data:
     )
 # Define the start command handler
 @bot.on_message(filters.command("start"))
+@bot.on_message(filters.command("start"))
 async def start(client: Client, msg: Message):
-    user = await client.get_me()
-    mention = user.mention
-    start_message = await client.send_message(
-        msg.chat.id,
-        Data.START.format(msg.from_user.mention)
-    )
-
-    await asyncio.sleep(1)
-    await start_message.edit_text(
-        Data.START.format(msg.from_user.mention) +
-        "Initializing Uploader bot... 🤖\n\n"
-        "Progress: [⬜⬜⬜⬜⬜⬜⬜⬜⬜] 0%\n\n"
-    )
-
-    await asyncio.sleep(1)
-    await start_message.edit_text(
-        Data.START.format(msg.from_user.mention) +
-        "Loading features... ⏳\n\n"
-        "Progress: [🟥🟥🟥⬜⬜⬜⬜⬜⬜] 25%\n\n"
+    photo_url = "https://telegra.ph/file/37985c408b1b7c817cbd6-4b850ca6f02b6eae30.jpg"
+    
+    caption = (
+        f"🤖 **I am TXT Extractor Bot** 🤖\n\n"
+        f"👋 Welcome {msg.from_user.mention}!\n\n"
+        f"💻 **Made By:** @Yae_X_Miko"
     )
     
-    await asyncio.sleep(1)
-    await start_message.edit_text(
-        Data.START.format(msg.from_user.mention) +
-        "This may take a moment, sit back and relax! 😊\n\n"
-        "Progress: [🟧🟧🟧🟧🟧⬜⬜⬜⬜] 50%\n\n"
-    )
-
-    await asyncio.sleep(1)
-    await start_message.edit_text(
-        Data.START.format(msg.from_user.mention) +
-        "Checking Bot Status... 🔍\n\n"
-        "Progress: [🟨🟨🟨🟨🟨🟨🟨⬜⬜] 75%\n\n"
-    )
-
-    await asyncio.sleep(1)
-    await start_message.edit_text(
-        Data.START.format(msg.from_user.mention) +
-        "Checking status Ok... Command Nhi Bataunga **Bot Made BY 🅂🄿🄸🄳🅈™👨🏻‍💻**🔍\n\n"
-        "Progress:[🟩🟩🟩🟩🟩🟩🟩🟩🟩] 100%\n\n"
-    )
+    await msg.reply_photo(photo=photo_url, caption=caption)
 
 @bot.on_message(filters.command(["stop"]) )
 async def restart_handler(_, m):
