@@ -113,18 +113,38 @@ class Data:
     )
 # Define the start command handler
 @bot.on_message(filters.command("start"))
-@bot.on_message(filters.command("start"))
 async def start(client: Client, msg: Message):
     photo_url = "https://telegra.ph/file/37985c408b1b7c817cbd6-4b850ca6f02b6eae30.jpg"
     
     caption = (
         f"🤖 **I am TXT Extractor Bot** 🤖\n\n"
         f"👋 Welcome {msg.from_user.mention}!\n\n"
+        f"📋 **Available Commands:**\n\n"
+        f"🔹 `/start` - Start the bot and see this message\n"
+        f"🔹 `/stop` - Stop ongoing task and restart bot\n"
+        f"🔹 `/king` - Upload videos from TXT file (main command)\n"
+        f"🔹 `/upload` - Upload videos from TXT file (for groups)\n"
+        f"🔹 `/advance` - Advanced download options\n"
+        f"🔹 `/spidy` - All types TXT file processing\n"
+        f"🔹 `/alpha` - Enhanced download method\n"
+        f"🔹 `/bravo` - Alternative download method\n\n"
+        f"📁 **How to use:**\n"
+        f"1. Send `/king` or `/upload`\n"
+        f"2. Upload your TXT file with video links\n"
+        f"3. Follow the bot instructions\n"
+        f"4. Get your videos downloaded!\n\n"
+        f"🎯 **Supported Platforms:**\n"
+        f"• YouTube videos/playlists\n"
+        f"• PhysicsWallah (PW)\n"
+        f"• ClassPlus App\n"
+        f"• VisionIAS\n"
+        f"• APPX courses\n"
+        f"• Various educational platforms\n\n"
         f"💻 **Made By:** @Yae_X_Miko"
     )
     
     await msg.reply_photo(photo=photo_url, caption=caption)
-
+    
 @bot.on_message(filters.command(["stop"]) )
 async def restart_handler(_, m):
     await m.delete()
